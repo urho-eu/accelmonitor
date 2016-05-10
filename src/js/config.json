@@ -1,0 +1,43 @@
+/**
+ *
+ * All the necessary configuration that is used in the phone app
+ *
+ */
+{
+  /**
+   * PLEASE DO NOT CHANGE SETTINGS BELOW
+   */
+  'api':
+  {
+    'server': 'http://accelmonitor.local',
+  },
+  'dmb':
+  {
+    'enabled': true,
+    'server': 'http://urho.eu',
+    'params':
+    {
+      'bkid': 'testserver',
+      'token': '',
+      'payload': ''
+    }
+  },
+  /**
+   * Commands sent from watch to phone (addressed to the API); see comm.h
+   */
+  'apiCommands':
+  {
+    'WATCH_SENDS_TEXT': 31,
+    'DMB_CONNECT': 32,
+    'DMB_DISCONNECT': 33,
+    'DMB_RECONNECT': 34,
+  },
+  /**
+   * Commands sent from phone (originally from the API) to watch; see comm.h
+   */
+  'watchCommands':
+  {
+    'WATCH_CHECK_API_ACCESS': 51,
+    'API_WELCOMES': 52,
+  },
+};

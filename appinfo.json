@@ -1,0 +1,29 @@
+{
+  "uuid": "3d28cf77-f133-46c4-bbd4-6da608d8ae9d",
+  "shortName": "AccelMonitor",
+  "longName": "AccelMonitor",
+  "companyName": "Urho Ltd",
+  "versionLabel": "0.1",
+  "sdkVersion": "3",
+  "targetPlatforms": [
+    "aplite",
+    "basalt",
+    "chalk"
+  ],
+  "capabilities": [
+    "health",
+    "configurable"
+  ],
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "STATUS_KEY": 0,
+    "COMMAND_KEY": 1,
+    "MESSAGE_KEY": 2,
+    "BROADCAST_KEY": 3
+  },
+  "resources": {
+    "media": []
+  }
+}

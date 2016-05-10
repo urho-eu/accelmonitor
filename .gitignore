@@ -1,0 +1,9 @@
+*~
+*bak
+build
+.lock*build
+.bower.json
+/*.png
+// until it's ready
+bower_components
+web_settings
