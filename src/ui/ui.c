@@ -21,8 +21,10 @@ static char *timer_prefix;
 static char *timer_text;
 static bool countdown;
 static bool measuring;
-
 static AppTimer *countdown_timer;
+
+static DataLoggingSessionRef accel_logger;
+uint32_t logger_tag;
 
 GRect header_frame, timer_frame, ticker_start_frame, ticker_end_frame;
 
@@ -55,6 +57,10 @@ static void update_timer() {
 static void accel_data_handler(AccelData *data, uint32_t num_samples) {
   //APP_LOG(APP_LOG_LEVEL_DEBUG, "accel_data_handler");
   //int res = snprintf(current_value, 100, "%" PRIu64 " -> x:%d, y: %d, z: %d", data.timestamp, data.x, data.y, data.z);
+  DataLoggingResult res = data_logging_log(accel_logger, data, 1);
+  if (res != DATA_LOGGING_SUCCESS) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "failed logging accel data: %d" + (int)res);
+  }
 }
 
 /**
@@ -77,18 +83,23 @@ static void countdown_handler(void *data) {
       if (countdown_timer) {
         app_timer_reschedule(countdown_timer, 1000);
       }
+      accel_logger = data_logging_create(++logger_tag, DATA_LOGGING_BYTE_ARRAY, sizeof(AccelData) * NUM_SAMPLES, false);
       APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring starts");
     } else {
       if (measuring) {
         measuring = false;
+
+        data_logging_finish(accel_logger);
+
         accel_data_service_unsubscribe();
         vibes_double_pulse();
         if (countdown_timer) {
           app_timer_cancel(countdown_timer);
         }
         seconds = DEFAULT_COUNTDOWN;
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring ends");
         text_layer_set_text(timer_layer, i18n.finished);
+
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring ends");
       }
     }
   }
@@ -107,13 +118,20 @@ static void up_single_click_handler(ClickRecognizerRef recognizer, void *context
 
   if (measuring) {
     measuring = false;
+
+    data_logging_finish(accel_logger);
+
     accel_data_service_unsubscribe();
     app_timer_cancel(countdown_timer);
-    seconds = DEFAULT_COUNTDOWN;
+
     window_set_background_color(window, GColorDarkGray);
     text_layer_set_text(timer_layer, i18n.stopped);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring stopped by user");
+
     vibes_double_pulse();
+
+    seconds = DEFAULT_COUNTDOWN;
+
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring stopped by user");
   } else {
     if (countdown) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "countdown stopped by user");
@@ -212,6 +230,7 @@ void window_load(Window *window) {
   current_ticker = (char *) malloc(size);
   timer_prefix = (char *) malloc(20);
   timer_text = (char *) malloc(25);
+  logger_tag = 0;
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
