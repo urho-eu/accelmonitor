@@ -1,4 +1,15 @@
 <resources>
   <string name="app_name">AccelMonitor</string>
-  <string name="title_activity_main">MainActivity</string>
+  <string name="title_activity_main">AccelMonitor</string>
+  <string name="connected">Pebble is connected.</string>
+  <string name="disconnected">Pebble not connected.</string>
+  <string name="readings">Readings</string>
+  <string name="graphs">Graphs</string>
+  <string name="timestamp">Timestamp</string>
+  <string name="x">X value</string>
+  <string name="y">Y value</string>
+  <string name="z">Z value</string>
+  <string name="btn">btn</string>
+  <string name="action_settings">Settings</string>
+  <string name="section_format">Hello World from section: %1$d</string>
 </resources>
