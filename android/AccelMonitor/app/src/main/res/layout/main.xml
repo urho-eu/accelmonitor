@@ -8,6 +8,7 @@
                                                  android:fitsSystemWindows="true"
                                                  tools:context="eu.urho.accelmonitor.MainActivity">
 
+
   <android.support.design.widget.AppBarLayout
     android:id="@+id/appbar"
     android:layout_width="match_parent"
@@ -22,7 +23,6 @@
       android:background="?attr/colorPrimary"
       app:layout_scrollFlags="scroll|enterAlways"
       app:popupTheme="@style/AppTheme.PopupOverlay">
-
     </android.support.v7.widget.Toolbar>
 
     <android.support.design.widget.TabLayout
@@ -30,31 +30,65 @@
       android:layout_width="match_parent"
       android:layout_height="wrap_content"/>
 
+    <EditText
+      android:layout_width="match_parent"
+      android:layout_height="40dp"
+      android:inputType="text|none"
+      android:padding="10dp"
+      android:singleLine="true"
+      android:hint="@string/waiting"
+      android:text="@string/waiting"
+      android:textSize="14sp"
+      android:textColor="@android:color/black"
+      android:gravity="left"
+      android:textColorHint="@android:color/white"
+      android:background="@android:color/white"
+      android:editable="true"
+      android:enabled="true"
+      android:focusable="false"
+      android:id="@+id/filename"
+      android:lines="1"
+      android:longClickable="true"/>
+
   </android.support.design.widget.AppBarLayout>
 
-  <android.support.v4.view.ViewPager
-    android:id="@+id/container"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+
+    <android.support.v4.view.ViewPager
+      android:id="@+id/container"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      app:layout_behavior="@string/appbar_scrolling_view_behavior"
+      android:layout_gravity="top"
+      android:layout_row="0"
+      android:layout_column="0"/>
 
   <android.support.design.widget.FloatingActionButton
-    android:id="@+id/newReading"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_gravity="start|bottom"
-    android:layout_margin="@dimen/fab_margin"
-    android:src="@android:drawable/stat_notify_sync"
-    app:backgroundTint="#5f71ab"/>
+      android:id="@+id/newData"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="start|bottom"
+      android:layout_margin="@dimen/fab_margin"
+      android:src="@android:drawable/stat_notify_sync"
+      app:backgroundTint="@color/colorAccent"
+      android:clickable="false"
+      android:focusable="false"
+      app:backgroundTintMode="src_over"
+      android:alpha="1"
+      android:adjustViewBounds="true"/>
 
   <android.support.design.widget.FloatingActionButton
-    android:id="@+id/saveReading"
+    android:id="@+id/saveData"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_gravity="end|bottom"
     android:layout_margin="@dimen/fab_margin"
     android:src="@android:drawable/ic_menu_save"
-    app:backgroundTint="#5f71ab"
-    android:visibility="invisible"/>
+    app:backgroundTint="@color/colorAccent"
+    android:clickable="false"
+    android:focusable="false"
+    app:backgroundTintMode="src_over"
+    android:alpha="1"
+    android:adjustViewBounds="true"/>
+
 
 </android.support.design.widget.CoordinatorLayout>

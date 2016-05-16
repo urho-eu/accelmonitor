@@ -14,7 +14,7 @@ public class AccRow extends TableRow {
     super(context);
   }
 
-  public AccRow(Context context, Integer rows, CharSequence valueTs, Integer valueX, Integer valueY, Integer valueZ) {
+  public AccRow(Context context, Integer rows, AccelData reading) {
     super(context);
 
     int textColor, bgColor;
@@ -33,12 +33,12 @@ public class AccRow extends TableRow {
       bgColor = ContextCompat.getColor(context, R.color.valueBgOddRow);
     }
 
-    Log.d("AccRow", "textColor: " + String.valueOf(textColor) + ", bgColor: " + String.valueOf(bgColor));
+    String format = this.getContext().getString(R.string.timestamp_format);
 
-    AccRowValue ts = new AccRowValue(context, valueTs, textColor, bgColor, TEXT_ALIGNMENT_CENTER);
-    AccRowValue x = new AccRowValue(context, valueX.toString(), textColor, bgColor, TEXT_ALIGNMENT_VIEW_START);
-    AccRowValue y = new AccRowValue(context, valueY.toString(), textColor, bgColor, TEXT_ALIGNMENT_VIEW_START);
-    AccRowValue z = new AccRowValue(context, valueZ.toString(), textColor, bgColor, TEXT_ALIGNMENT_VIEW_START);
+    AccRowValue ts = new AccRowValue(context, AccelMonitorUtils.getFormattedDate(reading.getTimestamp(), format), textColor, bgColor, TEXT_ALIGNMENT_CENTER);
+    AccRowValue x = new AccRowValue(context, reading.getX(), textColor, bgColor, TEXT_ALIGNMENT_VIEW_START);
+    AccRowValue y = new AccRowValue(context, reading.getY(), textColor, bgColor, TEXT_ALIGNMENT_VIEW_START);
+    AccRowValue z = new AccRowValue(context, reading.getZ(), textColor, bgColor, TEXT_ALIGNMENT_VIEW_START);
 
     this.addView(ts);
     this.addView(x);

@@ -5,7 +5,7 @@
   <color name="colorAccent">#FF4081</color>
   <color name="headBg">#EEEEEE</color>
   <color name="valueTextOddRow">#FFFFFF</color>
-  <color name="valueTextEvenRow">#000000</color>
-  <color name="valueBgOddRow">#000000</color>
+  <color name="valueTextEvenRow">#303F9F</color>
+  <color name="valueBgOddRow">#303F9F</color>
   <color name="valueBgEvenRow">#FFFFFF</color>
 </resources>

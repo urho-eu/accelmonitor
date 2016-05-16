@@ -1,5 +1,7 @@
 package eu.urho.accelmonitor;
 
+import android.app.Application;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -23,11 +25,25 @@ public class AccelMonitorUtils {
 
   /**
    *
-   * @param timestamp
+   * @param timestamp since EPOCH in ms
    * @return
    */
-  public static String getLongAsTimestamp(Long timestamp) {
-    final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
-    return DATE_FORMAT.format(new Date(timestamp.longValue() * 1000L)).toString();
+  public static String getFormattedDate(Long timestamp) {
+    String format = "HH:mm:ss.SSS";
+    return getFormattedDate(timestamp, format);
+  }
+
+  /**
+   *
+   * @param timestamp since EPOCH in ms
+   * @param format
+   * @return
+   */
+  public static String getFormattedDate(Long timestamp, String format) {
+    if (format == "") {
+      format = "HH:mm:ss.SSS";
+    }
+    final DateFormat DATE_FORMAT = new SimpleDateFormat(format);
+    return DATE_FORMAT.format(new Date(timestamp)).toString();
   }
 }

@@ -15,9 +15,24 @@ public class AccRowValue extends TextView {
     super(context);
   }
 
+  public AccRowValue(Context context, Number number, int textColor, int bgColor, int alignment) {
+    super(context);
+    this.setValues(number.toString(), textColor, bgColor, alignment);
+  }
+
   public AccRowValue(Context context, CharSequence text, int textColor, int bgColor, int alignment) {
     super(context);
+    this.setValues(text, textColor, bgColor, alignment);
+  }
 
+  /**
+   *
+   * @param text
+   * @param textColor
+   * @param bgColor
+   * @param alignment
+   */
+  private void setValues(CharSequence text, int textColor, int bgColor, int alignment) {
     this.setText(text);
     this.setTextColor(textColor);
     this.setBackgroundColor(bgColor);
