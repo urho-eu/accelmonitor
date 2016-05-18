@@ -1,6 +1,7 @@
 package eu.urho.accelmonitor;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.TableRow;
@@ -19,8 +20,6 @@ public class AccRow extends TableRow {
 
     int textColor, bgColor;
 
-    Log.d("AccRow", "rows: " + rows.toString());
-
     this.setLayoutParams(new TableRow.LayoutParams(
         TableRow.LayoutParams.WRAP_CONTENT,
         TableRow.LayoutParams.WRAP_CONTENT));
@@ -31,6 +30,11 @@ public class AccRow extends TableRow {
     } else {
       textColor = ContextCompat.getColor(context, R.color.valueTextOddRow);
       bgColor = ContextCompat.getColor(context, R.color.valueBgOddRow);
+    }
+
+    if (reading.getVibration()) {
+      Log.d("AccRow", "vibrated reading");
+      textColor = Color.GRAY;
     }
 
     String format = this.getContext().getString(R.string.timestamp_format);

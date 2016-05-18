@@ -1,21 +1,34 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        rel1 {
+            keyAlias 'accelmonitor'
+            keyPassword 'Gherv9Od:Wrob'
+            storeFile file('/home/sopi/private/android.jks')
+            storePassword 'Gherv9Od:Wrob'
+        }
+    }
     compileSdkVersion 23
     buildToolsVersion '23.0.3'
-
     defaultConfig {
         applicationId "eu.urho.accelmonitor"
         minSdkVersion 23
         targetSdkVersion 23
         versionCode 1
-        versionName "1.0"
+        versionName '0.1'
+        signingConfig signingConfigs.rel1
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.rel1
+            renderscriptDebuggable false
+            zipAlignEnabled true
         }
+    }
+    productFlavors {
     }
 }
 

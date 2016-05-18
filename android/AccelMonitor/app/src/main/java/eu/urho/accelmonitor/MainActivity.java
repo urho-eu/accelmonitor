@@ -1,6 +1,8 @@
 package eu.urho.accelmonitor;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.os.Handler;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.view.ViewPager;
@@ -12,6 +14,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewOverlay;
 import android.widget.EditText;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -19,9 +22,12 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import com.getpebble.android.kit.PebbleKit;
+import com.getpebble.android.kit.util.PebbleDictionary;
+import com.getpebble.android.kit.util.PebbleTuple;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,6 +40,27 @@ public class MainActivity extends AppCompatActivity {
   FloatingActionButton newData = null;
   FloatingActionButton saveData = null;
 
+  // dictionary keys as per defined in the watchapp
+  private final static int STATUS_KEY = 0;
+  private final static int COMMAND_KEY = 1;
+  private final static int MESSAGE_KEY = 2;
+  private final static int BROADCAST_KEY = 3;
+  // commands from watch to phone
+  private final static int TOGGLE_MEASURING_FROM_WATCH = 41;
+
+  // send command to watch
+  protected WatchCommander watchCommander;
+
+  // counter drawable overlay
+  // fix show()
+  //protected Counter counter = new Counter("Hello", Color.WHITE, Color.GRAY);
+
+  /**
+   * for commands between Pebble and the phone
+   */
+  private PebbleKit.PebbleDataReceiver dataReceiver;
+  private Handler handler;
+
   /**
    * @link PebbleKit.PebbleDataLogReceiver to get accel data from Pebble
    */
@@ -44,16 +71,14 @@ public class MainActivity extends AppCompatActivity {
    */
   private ViewPager viewPager;
 
-  // the rows in the readings table
+  // rows counter in the table
+  // todo: could be replaced with dataList.getChildCount
   private int rows = 0;
 
-  // reading details
-  CharSequence ts = "";
-
-  // local data storage
+  // CSV data store in memory
   List<String> currentData = new ArrayList<>();
 
-  //
+  // CSV file
   EditText filename;
 
   @Override
@@ -64,20 +89,16 @@ public class MainActivity extends AppCompatActivity {
     // init buttons
     newData = (FloatingActionButton) findViewById(R.id.newData);
     saveData = (FloatingActionButton) findViewById(R.id.saveData);
-    saveData.setVisibility(View.INVISIBLE);
+    if (saveData != null) {
+      saveData.setVisibility(View.INVISIBLE);
+    }
 
     filename = (EditText) findViewById(R.id.filename);
 
     Context context = getApplicationContext();
 
     // check Pebble connection
-    isConnected = PebbleKit.isWatchConnected(context);
-    if (isConnected) {
-      PebbleKit.startAppOnPebble(context, appUuid);
-      Toast.makeText(context, getString(R.string.connected), Toast.LENGTH_LONG).show();
-    } else {
-      Toast.makeText(context, getString(R.string.disconnected), Toast.LENGTH_LONG).show();
-    }
+    displayConnectionInfo(context);
 
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
@@ -102,6 +123,10 @@ public class MainActivity extends AppCompatActivity {
     TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
     tabLayout.setupWithViewPager(viewPager);
 
+    if (watchCommander == null) {
+      watchCommander = new WatchCommander(context, appUuid);
+    }
+
     /**
      * Start a new measurement by clicking the left button
      */
@@ -109,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
       @Override
       public void onClick(View view) {
         clearCurrentData();
+        watchCommander.toggleMeasuring();
       }
      });
 
@@ -119,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
       @Override
       public void onClick(View view) {
         Log.d(TAG, "Save CSV now");
+        watchCommander.shortPulse();
       }
     });
   }
@@ -126,10 +153,81 @@ public class MainActivity extends AppCompatActivity {
   @Override
   protected void onResume() {
     super.onResume();
+    startWatchApp(getApplicationContext());
+
+    // fix it
+    //counter.show(findViewById(R.id.main_content));
+
+    if (dataReceiver == null) {
+      final Handler handler = new Handler();
+
+      if (watchCommander == null) {
+        watchCommander = new WatchCommander(getApplicationContext(), appUuid);
+      }
+
+      dataReceiver = new PebbleKit.PebbleDataReceiver(appUuid) {
+        @Override
+        public void receiveData(final Context context, final int transactionId, final PebbleDictionary data) {
+          final String logTag = "receiveData";
+
+          handler.post(new Runnable() {
+            @Override
+            public void run() {
+              // All data received from the Pebble must be ACK'd, otherwise you'll hit time-outs in the
+              // watch-app which will cause the watch to feel "laggy" during periods of frequent
+              // communication.
+              PebbleKit.sendAckToPebble(context, transactionId);
+              PebbleTuple tuple;
+
+              for (int i = 0; i < data.size(); i++) {
+                try {
+                  tuple = data.iterator().next();
+                }
+                catch (NoSuchElementException e) {
+                  // bail out
+                  return;
+                }
+
+                int key = tuple.key;
+                String value = tuple.value.toString();
+                Log.d(logTag, i + ". tuple: " + key + " -> " + value);
+
+                switch (key) {
+                  case COMMAND_KEY:
+                    int command = 0;
+                    try {
+                      command = Integer.parseInt(value);
+                    }
+                    catch (NumberFormatException e) {
+                      Log.d(logTag, "invalid command:" + value);
+                    }
+                    switch (command) {
+                      case TOGGLE_MEASURING_FROM_WATCH:
+                        clearCurrentData();
+                        break;
+                      default:
+                        Log.d(logTag, "unknown command:" + tuple.value.toString());
+                    }
+                    break;
+                  case MESSAGE_KEY:
+                    filename.setEnabled(false);
+                    filename.setText(value);
+                    break;
+                  default:
+                    Log.d(logTag, "unknown key" + tuple.key + " value: " + tuple.value.toString());
+                }
+              }
+            }
+          });
+        }
+      };
+      PebbleKit.registerReceivedDataHandler(this, dataReceiver);
+    }
 
     if (dataloggingReceiver == null) {
       // Define data reception behavior
       dataloggingReceiver = new PebbleKit.PebbleDataLogReceiver(appUuid) {
+        final String logTag = "dataloggingReceiver";
 
         @Override
         public void receiveData(Context context, UUID appUuid, Long timestamp, Long tag, byte[] data) {
@@ -143,8 +241,7 @@ public class MainActivity extends AppCompatActivity {
           }
           TableLayout dataList = (TableLayout) findViewById(R.id.table);
 
-          ts = AccelMonitorUtils.getFormattedDate(timestamp);
-          Log.d("MainActivity", "Data received: " + ts + ", tag: " + tag);
+          Log.d(logTag, "Data received: " + AccelMonitorUtils.getFormattedDate(timestamp) + ", tag: " + tag);
 
           for (AccelData reading : AccelData.fromDataArray(data)) {
             rows++;
@@ -159,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFinishSession(Context context, UUID appUuid, Long timestamp, Long tag) {
           super.onFinishSession(context, appUuid, timestamp, tag);
-          Log.d("MainActivity", "Log session finished: " + AccelMonitorUtils.getFormattedDate(timestamp) + ", tag: " + tag + ", rows: " + rows);
+          Log.d(logTag, "Log session finished: " + AccelMonitorUtils.getFormattedDate(timestamp) + ", tag: " + tag + ", rows: " + rows);
 
           filename.setText(getString(R.string.csv_prefix) + "_" + timestamp + "." + getString(R.string.csv_extension));
           filename.setFocusableInTouchMode(true);
@@ -183,6 +280,9 @@ public class MainActivity extends AppCompatActivity {
   private void clearCurrentData() {
     rows = 0;
     TableLayout dataList = (TableLayout) findViewById(R.id.table);
+
+    // fix show() first
+    // counter.hide();
 
     if (dataList != null && dataList.getChildCount() > 0) {
       TableRow head = (TableRow) dataList.getChildAt(0);
@@ -239,10 +339,52 @@ public class MainActivity extends AppCompatActivity {
   @Override
   protected void onPause() {
     super.onPause();
+    stopWatchApp(getApplicationContext());
+    // Always deregister any Activity-scoped BroadcastReceivers when the Activity is paused
     if (dataloggingReceiver != null) {
       unregisterReceiver(dataloggingReceiver);
       dataloggingReceiver = null;
     }
+    if (dataReceiver != null) {
+      unregisterReceiver(dataReceiver);
+      dataReceiver = null;
+    }
+
+  }
+
+  /**
+   * Displays a toast about Pebble connection
+   * @param context
+   */
+  public void displayConnectionInfo(Context context) {
+    isConnected = PebbleKit.isWatchConnected(context);
+    if (isConnected) {
+      Toast.makeText(context, getString(R.string.connected), Toast.LENGTH_LONG).show();
+    } else {
+      Toast.makeText(context, getString(R.string.disconnected), Toast.LENGTH_LONG).show();
+    }
+  }
+
+  /**
+   * Start the watch app on Pebble
+   * @param context
+   */
+  public void startWatchApp(Context context) {
+    isConnected = PebbleKit.isWatchConnected(context);
+    if (! isConnected) return;
+
+    PebbleKit.startAppOnPebble(context, appUuid);
+  }
+
+  /**
+   * Close the watch app on Pebble
+   * @param context
+   */
+  public void stopWatchApp(Context context) {
+    isConnected = PebbleKit.isWatchConnected(context);
+    if (! isConnected) return;
+
+    PebbleKit.closeAppOnPebble(context, appUuid);
   }
 
   @Override

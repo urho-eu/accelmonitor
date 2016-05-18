@@ -12,7 +12,10 @@ default_i18n i18n = {
   .started = "Started",
   .stopped = "Stopped",
   .finished = "Finished",
+  .measuring_starts = "Measuring started",
+  .measuring_ends = "Measuring finished",
   .prefix_countdown = "Starting in",
-  .prefix_measuring = "Sampling for"
+  .sampling_countdown = "Sampling for",
+  .stopped_by_user = "Stopped by user"
 };
 

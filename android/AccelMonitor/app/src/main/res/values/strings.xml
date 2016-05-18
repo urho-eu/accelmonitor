@@ -6,11 +6,13 @@
   <string name="readings">Readings</string>
   <string name="graphs">Graphs</string>
   <string name="waiting">Waiting for data...</string>
+  <string name="pre_countdown">Starting in:</string>
+  <string name="sampling_countdown">Sampling for:</string>
   <string name="csv_separator">,</string>
   <string name="csv_prefix">AccelMonitor</string>
   <string name="csv_extension">csv</string>
   <string name="timestamp">Timestamp</string>
-  <string name="timestamp_format">HH:mm:ss.SSSZ</string>
+  <string name="timestamp_format">HH:mm:ss.SSS</string>
   <string name="x">X value</string>
   <string name="y">Y value</string>
   <string name="z">Z value</string>

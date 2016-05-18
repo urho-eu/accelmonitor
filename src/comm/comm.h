@@ -13,6 +13,8 @@ enum {
 // see also js/config.json
 typedef enum {
   API_WELCOMES = 51,
+  TOGGLE_MEASURING_FROM_PHONE = 52,
+  SHORT_PULSE = 61,
 } WatchCommand;
 
 // commands from watch to phone
@@ -22,6 +24,7 @@ typedef enum {
   DMB_CONNECT = 32,
   DMB_DISCONNECT = 33,
   DMB_RECONNECT = 34,
+  TOGGLE_MEASURING_FROM_WATCH = 41,
 } PhoneCommand;
 
 /**

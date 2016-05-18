@@ -45,18 +45,17 @@ static void update_timer() {
     timer_prefix = i18n.prefix_countdown;
   }
   if (measuring) {
-    timer_prefix = i18n.prefix_measuring;
+    timer_prefix = i18n.sampling_countdown;
   }
   snprintf(timer_text, 25, "%s %02d", timer_prefix, seconds);
   text_layer_set_text(timer_layer, timer_text);
+  watch_sends_text(timer_text);
 }
 
 /**
  * Forward the data from the accelerometer
  */
 static void accel_data_handler(AccelData *data, uint32_t num_samples) {
-  //APP_LOG(APP_LOG_LEVEL_DEBUG, "accel_data_handler");
-  //int res = snprintf(current_value, 100, "%" PRIu64 " -> x:%d, y: %d, z: %d", data.timestamp, data.x, data.y, data.z);
   DataLoggingResult res = data_logging_log(accel_logger, data, 1);
   if (res != DATA_LOGGING_SUCCESS) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "failed logging accel data: %d" + (int)res);
@@ -64,42 +63,52 @@ static void accel_data_handler(AccelData *data, uint32_t num_samples) {
 }
 
 /**
- *
+ * Countdown for pre-measuring and measuring phase
  */
 static void countdown_handler(void *data) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "countdown_handler seconds: %02d", seconds);
+  static char log[] = "";
 
   update_timer();
   seconds--;
 
   if (seconds < 0 && countdown_timer) {
     if (countdown) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring starts");
+      watch_sends_text(i18n.measuring_starts);
+
       countdown = false;
       measuring = true;
       seconds = DEFAULT_SAMPLING;
+
       vibes_short_pulse();
+
       accel_service_set_sampling_rate(ACCEL_SAMPLING_25HZ);
       accel_data_service_subscribe(NUM_SAMPLES, accel_data_handler);
+
       if (countdown_timer) {
         app_timer_reschedule(countdown_timer, 1000);
       }
+
       accel_logger = data_logging_create(++logger_tag, DATA_LOGGING_BYTE_ARRAY, sizeof(AccelData) * NUM_SAMPLES, false);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring starts");
     } else {
       if (measuring) {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring ends");
+        watch_sends_text(i18n.measuring_ends);
+
         measuring = false;
 
         data_logging_finish(accel_logger);
-
         accel_data_service_unsubscribe();
+
         vibes_double_pulse();
+
         if (countdown_timer) {
           app_timer_cancel(countdown_timer);
         }
-        seconds = DEFAULT_COUNTDOWN;
-        text_layer_set_text(timer_layer, i18n.finished);
 
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring ends");
+        seconds = DEFAULT_COUNTDOWN;
+
+        text_layer_set_text(timer_layer, i18n.finished);
       }
     }
   }
@@ -110,13 +119,13 @@ static void countdown_handler(void *data) {
 }
 
 /**
- * called when up btn pressed
+ * Starts or ends measuring
  */
-static void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, i18n.pressed_up);
-  watch_sends_text(i18n.pressed_up);
-
+void toggle_measuring() {
   if (measuring) {
+    watch_sends_text(i18n.stopped_by_user);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring stopped by user");
+
     measuring = false;
 
     data_logging_finish(accel_logger);
@@ -130,11 +139,11 @@ static void up_single_click_handler(ClickRecognizerRef recognizer, void *context
     vibes_double_pulse();
 
     seconds = DEFAULT_COUNTDOWN;
-
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "measuring stopped by user");
   } else {
     if (countdown) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "countdown stopped by user");
+      watch_sends_text(i18n.measuring_ends);
+
       countdown = false;
       if (countdown_timer) {
         app_timer_cancel(countdown_timer);
@@ -148,6 +157,15 @@ static void up_single_click_handler(ClickRecognizerRef recognizer, void *context
       countdown_handler(NULL);
     }
   }
+}
+
+/**
+ * called when up btn pressed
+ */
+static void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, i18n.pressed_up);
+  watch_sends_command(TOGGLE_MEASURING_FROM_WATCH);
+  toggle_measuring();
 }
 
 /**

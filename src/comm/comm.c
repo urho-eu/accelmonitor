@@ -31,12 +31,10 @@ void watch_sends_text(const char *text) {
 
 	app_message_outbox_begin(&iter);
 	dict_write_cstring(iter, MESSAGE_KEY, text);
-
 	dict_write_end(iter);
   app_message_outbox_send();
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent MESSAGE_KEY to API via the phone");
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", text);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent MESSAGE_KEY to phone: %s", text);
 }
 
 /**
@@ -130,6 +128,15 @@ void in_received_handler(DictionaryIterator *received, void *context) {
 	tuple = dict_find(received, COMMAND_KEY);
 	if (tuple) {
 		APP_LOG(APP_LOG_LEVEL_DEBUG, "Received COMMAND_KEY from phone: %d", (int)tuple->value->uint8);
+    // possible commands: toggle measuring, short pulse
+    if ((int)tuple->value->uint8 == TOGGLE_MEASURING_FROM_PHONE) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Do TOGGLE_MEASURING_FROM_PHONE");
+      toggle_measuring();
+    }
+    if ((int)tuple->value->uint8 == SHORT_PULSE) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Do SHORT_PULSE");
+      vibes_short_pulse();
+    }
 	}
 }
 

@@ -50,7 +50,6 @@ Pebble.addEventListener("appmessage",
       }
     }
 
-
     if (typeof e.payload.MESSAGE_KEY !== 'undefined')
     {
       console.log('Watch sent MESSAGE_KEY: ' + e.payload.MESSAGE_KEY);
