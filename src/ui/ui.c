@@ -2,9 +2,9 @@
 #include <inttypes.h>
 
 #include "ui.h"
-#include "../i18n/en.h"
-#include "../comm/comm.h"
-#include "../util/util.h"
+#include "comm/comm.h"
+#include "util/util.h"
+#include "i18n/i18n.h"
 
 static Window *window;
 
@@ -17,6 +17,7 @@ static GFont font_small, font_big, font_medium;
 
 int seconds;
 static char *current_ticker;
+static char *current_status;
 static char *timer_prefix;
 static char *timer_text;
 static bool countdown;
@@ -29,12 +30,19 @@ uint32_t logger_tag;
 GRect header_frame, timer_frame, ticker_start_frame, ticker_end_frame;
 
 /**
- * called when back btn pressed
+ *
  */
-static void back_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "back btn multiclicked");
-  watch_sends_command(DMB_RECONNECT);
-  watch_sends_text(i18n.pressed_back);
+void update_ticker(const char *text) {
+  snprintf(current_ticker, 100, "%s", text);
+  layer_mark_dirty(ticker_layer);
+}
+
+/**
+ *
+ */
+void update_status(const char *text) {
+  snprintf(current_status, 100, "%s", text);
+  text_layer_set_text(timer_layer, current_status);
 }
 
 /**
@@ -48,8 +56,17 @@ static void update_timer() {
     timer_prefix = i18n.sampling_countdown;
   }
   snprintf(timer_text, 25, "%s %02d", timer_prefix, seconds);
-  text_layer_set_text(timer_layer, timer_text);
+  update_status(timer_text);
   watch_sends_text(timer_text);
+}
+
+/**
+ * called when back btn pressed
+ */
+static void back_single_click_handler(ClickRecognizerRef recognizer, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "back btn multiclicked");
+  watch_sends_command(DMB_RECONNECT);
+  watch_sends_text(i18n.pressed_back);
 }
 
 /**
@@ -108,7 +125,7 @@ static void countdown_handler(void *data) {
 
         seconds = DEFAULT_COUNTDOWN;
 
-        text_layer_set_text(timer_layer, i18n.finished);
+        update_status(i18n.finished);
       }
     }
   }
@@ -134,7 +151,7 @@ void toggle_measuring() {
     app_timer_cancel(countdown_timer);
 
     window_set_background_color(window, GColorDarkGray);
-    text_layer_set_text(timer_layer, i18n.stopped);
+    update_status(i18n.stopped);
 
     vibes_double_pulse();
 
@@ -148,11 +165,11 @@ void toggle_measuring() {
       if (countdown_timer) {
         app_timer_cancel(countdown_timer);
       }
-      text_layer_set_text(timer_layer, i18n.stopped);
+      update_status(i18n.stopped);
     } else {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "countdown starts by user");
       countdown = true;
-      text_layer_set_text(timer_layer, i18n.started);
+      update_status(i18n.started);
       seconds = DEFAULT_COUNTDOWN;
       countdown_handler(NULL);
     }
@@ -181,6 +198,7 @@ static void select_single_click_handler(ClickRecognizerRef recognizer, void *con
  */
 static void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, i18n.pressed_down);
+  watch_sends_command(SAVE_TO_FILE);
   watch_sends_text(i18n.pressed_down);
 }
 
@@ -229,16 +247,6 @@ static void ticker_update_proc(Layer *layer, GContext *ctx) {
 /**
  *
  */
-void update_ticker(const char *text) {
-  //APP_LOG(APP_LOG_LEVEL_DEBUG, "update_ticker called");
-  snprintf(current_ticker, 100, "%s", text);
-  //APP_LOG(APP_LOG_LEVEL_DEBUG, sprintf("update_ticker called: %d", res));
-  layer_mark_dirty(ticker_layer);
-}
-
-/**
- *
- */
 void window_load(Window *window) {
   font_small = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   font_medium = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
@@ -246,6 +254,7 @@ void window_load(Window *window) {
 
   int size = 100;
   current_ticker = (char *) malloc(size);
+  current_status = (char *) malloc(size / 2);
   timer_prefix = (char *) malloc(20);
   timer_text = (char *) malloc(25);
   logger_tag = 0;
@@ -268,7 +277,7 @@ void window_load(Window *window) {
   timer_layer = text_layer_create(timer_frame);
   text_layer_set_font(timer_layer, font_medium);
   text_layer_set_text_alignment(timer_layer, GTextAlignmentCenter);
-  text_layer_set_text(timer_layer, i18n.idle);
+  update_status(i18n.idle);
 
   // Set all update (redraw) proc for the layers
   layer_set_update_proc(page0_layer, page0_update_proc);
@@ -322,6 +331,7 @@ void window_redraw() {
  */
 void destroy(void) {
   free(current_ticker);
+  free(current_status);
   free(timer_prefix);
   free(timer_text);
 

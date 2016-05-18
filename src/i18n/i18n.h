@@ -18,5 +18,8 @@ typedef struct default_i18n {
   char *prefix_countdown;
   char *sampling_countdown;
   char *stopped_by_user;
+  char *data_save_ok;
+  char *data_save_failed;
 } __attribute__((__packed__)) default_i18n;
 
+default_i18n i18n;

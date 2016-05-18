@@ -1,6 +1,4 @@
-#pragma once
-
-#include "common.h"
+#include "i18n.h"
 
 default_i18n i18n = {
   .title = "AccelMonitor",
@@ -16,6 +14,7 @@ default_i18n i18n = {
   .measuring_ends = "Measuring finished",
   .prefix_countdown = "Starting in",
   .sampling_countdown = "Sampling for",
-  .stopped_by_user = "Stopped by user"
+  .stopped_by_user = "Stopped by user",
+  .data_save_ok = "Data saved",
+  .data_save_failed = "Failed to save",
 };
-

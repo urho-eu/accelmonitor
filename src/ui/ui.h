@@ -16,5 +16,6 @@ void window_redraw();
 void destroy();
 
 void update_ticker(const char *text);
+void update_status(const char *text);
 //void update_timer(uint8_t seconds);
 void toggle_measuring();

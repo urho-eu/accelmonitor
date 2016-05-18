@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "comm.h"
 #include "ui/ui.h"
+#include "i18n/i18n.h"
 
 static char ticker[10];
 
@@ -118,10 +119,18 @@ void in_received_handler(DictionaryIterator *received, void *context) {
 	tuple = dict_find(received, STATUS_KEY);
 	if (tuple) {
 		APP_LOG(APP_LOG_LEVEL_DEBUG, "Received STATUS_KEY from phone: %d", (int)tuple->value->uint8);
-    if ((int)tuple->value->uint8 == 1) {
-      // send back something to the phone
-      // lame: add 10 to the received value
-      watch_sends_status(11);
+    switch((int)tuple->value->uint8) {
+      case PHONE_WELCOMES:
+        watch_sends_status(WATCH_GREETS);
+        return;
+      case DATA_SAVE_OK:
+        update_status(i18n.data_save_ok);
+        return;
+      case DATA_SAVE_FAILED:
+        update_status(i18n.data_save_failed);
+        return;
+      default:
+        return;
     }
 	}
 

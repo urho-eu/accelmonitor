@@ -11,6 +11,8 @@
   <string name="csv_separator">,</string>
   <string name="csv_prefix">AccelMonitor</string>
   <string name="csv_extension">csv</string>
+  <string name="data_save_ok">Data saved</string>
+  <string name="data_save_failed">Failed to save</string>
   <string name="timestamp">Timestamp</string>
   <string name="timestamp_format">HH:mm:ss.SSS</string>
   <string name="x">X value</string>

@@ -18,8 +18,10 @@ import android.view.ViewOverlay;
 import android.widget.EditText;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -47,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
   private final static int BROADCAST_KEY = 3;
   // commands from watch to phone
   private final static int TOGGLE_MEASURING_FROM_WATCH = 41;
+  private final static int SAVE_TO_PHONE = 42;
 
   // send command to watch
   protected WatchCommander watchCommander;
@@ -80,6 +83,9 @@ public class MainActivity extends AppCompatActivity {
 
   // CSV file
   EditText filename;
+
+  // storage
+  Storage storage = new Storage(Storage.Type.CSV);
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -127,6 +133,10 @@ public class MainActivity extends AppCompatActivity {
       watchCommander = new WatchCommander(context, appUuid);
     }
 
+    // set up our storage
+    storage.setSeparator(getString(R.string.csv_separator).charAt(0));
+    storage.setDirectory(context.getExternalFilesDir(null).getAbsolutePath());
+
     /**
      * Start a new measurement by clicking the left button
      */
@@ -144,8 +154,7 @@ public class MainActivity extends AppCompatActivity {
     saveData.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        Log.d(TAG, "Save CSV now");
-        watchCommander.shortPulse();
+        saveCurrentData();
       }
     });
   }
@@ -205,13 +214,16 @@ public class MainActivity extends AppCompatActivity {
                       case TOGGLE_MEASURING_FROM_WATCH:
                         clearCurrentData();
                         break;
+                      case SAVE_TO_PHONE:
+                        saveCurrentData();
+                        break;
                       default:
                         Log.d(logTag, "unknown command:" + tuple.value.toString());
                     }
                     break;
                   case MESSAGE_KEY:
                     filename.setEnabled(false);
-                    filename.setText(value);
+                    displayStatusUpdate(value);
                     break;
                   default:
                     Log.d(logTag, "unknown key" + tuple.key + " value: " + tuple.value.toString());
@@ -245,7 +257,9 @@ public class MainActivity extends AppCompatActivity {
 
           for (AccelData reading : AccelData.fromDataArray(data)) {
             rows++;
-            currentData.add(reading.toCsv(','));
+            // row to the csv file
+            storage.add(reading.toCsv(','));
+            // row to the table in the UI
             AccRow row = new AccRow(context, rows, reading);
             if (dataList != null) {
               dataList.addView(row);
@@ -257,8 +271,9 @@ public class MainActivity extends AppCompatActivity {
         public void onFinishSession(Context context, UUID appUuid, Long timestamp, Long tag) {
           super.onFinishSession(context, appUuid, timestamp, tag);
           Log.d(logTag, "Log session finished: " + AccelMonitorUtils.getFormattedDate(timestamp) + ", tag: " + tag + ", rows: " + rows);
+          String name = getString(R.string.csv_prefix) + "_" + timestamp + "." + getString(R.string.csv_extension);
 
-          filename.setText(getString(R.string.csv_prefix) + "_" + timestamp + "." + getString(R.string.csv_extension));
+          filename.setText(name);
           filename.setFocusableInTouchMode(true);
           filename.setActivated(true);
           filename.setEnabled(true);
@@ -271,6 +286,21 @@ public class MainActivity extends AppCompatActivity {
 
       PebbleKit.registerDataLogReceiver(this, dataloggingReceiver);
       PebbleKit.requestDataLogsForApp(this, appUuid);
+    }
+  }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    stopWatchApp(getApplicationContext());
+    // Always deregister any Activity-scoped BroadcastReceivers when the Activity is paused
+    if (dataloggingReceiver != null) {
+      unregisterReceiver(dataloggingReceiver);
+      dataloggingReceiver = null;
+    }
+    if (dataReceiver != null) {
+      unregisterReceiver(dataReceiver);
+      dataReceiver = null;
     }
   }
 
@@ -290,9 +320,9 @@ public class MainActivity extends AppCompatActivity {
       dataList.addView(head);
     }
 
-    currentData.clear();
+    storage.data.clear();
 
-    filename.setText(getString(R.string.waiting));
+    displayStatusUpdate(R.string.waiting);
     filename.setFocusableInTouchMode(false);
     filename.setActivated(false);
     filename.setEnabled(false);
@@ -302,54 +332,45 @@ public class MainActivity extends AppCompatActivity {
   }
 
   /**
-   * Save the current measurements into a new CSV file
-   * @param name
-   * @return
+   * Save the readings to a CSV file
    */
-  public boolean saveCurrentData(String name) {
-    if (currentData.size() == 0) return false;
+  private void saveCurrentData() {
+    if (storage.data.size() <= 1) return;
+    Log.d(TAG, "Save CSV now: data size: " + storage.data.size());
+    storage.setHeader(determineHeader());
+    storage.setName(filename.getText().toString());
+    try {
+      boolean status = storage.dump();
+      watchCommander.sendSavingStatus(status);
+      displayStatusUpdate(R.string.data_save_ok);
+    } catch (IOException e) {
+      Log.d(TAG, "CSV file save failed");
+      displayStatusUpdate(R.string.data_save_failed);
+      e.printStackTrace();
+    }
+  }
 
+  /**
+   * Determines the header for the CSV file
+   * @return header
+   */
+  private String determineHeader() {
     String header = "";
     char separator = getString(R.string.csv_separator).charAt(0);
-
     TableLayout dataList = (TableLayout) findViewById(R.id.table);
 
     if (dataList != null && dataList.getChildCount() > 0) {
-      // create and open file for writing
-      // todo
-      // determine the 1st line of the CSV file based on the table's head
       TableRow head = (TableRow) dataList.getChildAt(0);
+      Log.d(TAG, "head: " + head.toString());
       for (int i = 0; i < head.getChildCount(); i++) {
-        AccRowValue value = (AccRowValue) head.getChildAt(i);
+        TextView value = (TextView) head.getChildAt(i);
         header += value.getText();
-        if (i < head.getChildCount()) {
+        if (i < (head.getChildCount() - 1)) {
           header += separator;
         }
       }
-
-      // iterate through the saved data
-      for (int i = 0; i < currentData.size(); i++) {
-        Log.d("sessionFinnish", currentData.get(i));
-      }
-
     }
-    return true;
-  }
-
-  @Override
-  protected void onPause() {
-    super.onPause();
-    stopWatchApp(getApplicationContext());
-    // Always deregister any Activity-scoped BroadcastReceivers when the Activity is paused
-    if (dataloggingReceiver != null) {
-      unregisterReceiver(dataloggingReceiver);
-      dataloggingReceiver = null;
-    }
-    if (dataReceiver != null) {
-      unregisterReceiver(dataReceiver);
-      dataReceiver = null;
-    }
-
+    return header;
   }
 
   /**
@@ -363,6 +384,25 @@ public class MainActivity extends AppCompatActivity {
     } else {
       Toast.makeText(context, getString(R.string.disconnected), Toast.LENGTH_LONG).show();
     }
+  }
+
+  /**
+   *
+   * @param message
+   */
+  private void displayStatusUpdate(String message) {
+    // todo: refactor the notification stuff
+    filename.setText(message);
+
+  }
+
+  /**
+   *
+   * @param id
+   */
+  private void displayStatusUpdate(int id) {
+    // todo: refactor the notification stuff
+    filename.setText(getString(id));
   }
 
   /**

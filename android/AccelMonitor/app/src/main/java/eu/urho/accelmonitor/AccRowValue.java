@@ -1,6 +1,7 @@
 package eu.urho.accelmonitor;
 
 import android.content.Context;
+import android.support.v7.widget.AppCompatTextView;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.TextView;
@@ -10,6 +11,8 @@ import android.widget.TextView;
  */
 public class AccRowValue extends TextView {
 
+  private String value = "";
+
   public AccRowValue(Context context)
   {
     super(context);
@@ -17,12 +20,12 @@ public class AccRowValue extends TextView {
 
   public AccRowValue(Context context, Number number, int textColor, int bgColor, int alignment) {
     super(context);
-    this.setValues(number.toString(), textColor, bgColor, alignment);
+    this.init(number.toString(), textColor, bgColor, alignment);
   }
 
   public AccRowValue(Context context, CharSequence text, int textColor, int bgColor, int alignment) {
     super(context);
-    this.setValues(text, textColor, bgColor, alignment);
+    this.init(text, textColor, bgColor, alignment);
   }
 
   /**
@@ -32,7 +35,8 @@ public class AccRowValue extends TextView {
    * @param bgColor
    * @param alignment
    */
-  private void setValues(CharSequence text, int textColor, int bgColor, int alignment) {
+  private void init(CharSequence text, int textColor, int bgColor, int alignment) {
+    this.value = text.toString();
     this.setText(text);
     this.setTextColor(textColor);
     this.setBackgroundColor(bgColor);
@@ -42,5 +46,13 @@ public class AccRowValue extends TextView {
 
     int p = getResources().getDimensionPixelSize(R.dimen.value_pad);
     this.setPadding(p, p, p, p);
+  }
+
+  /**
+   * Returns the value string set with setText()
+   * @return value @link String
+   */
+  public String getValue() {
+    return this.value;
   }
 }
